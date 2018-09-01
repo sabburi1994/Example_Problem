@@ -4,13 +4,14 @@ from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-import os
-from datetime import datetime, timedelta
+#import os
+#from datetime import datetime, timedelta
 
 #added by abburi
 import sqlite3
 import warnings
 import json
+from datetime import datetime
 
 warnings.filterwarnings("ignore")
 
@@ -37,7 +38,7 @@ class UnfollowLogManager(object):
     def __init__(self, insta_data_id):
         self.insta_data_id = insta_data_id
 
-#added by abburi
+#manual functions added by abburi
     def db_connection(self, db_name):
         connection = sqlite3.connect(db_name)
         cursor = connection.cursor()
@@ -45,7 +46,6 @@ class UnfollowLogManager(object):
 
     def replace_data(self, connection, cursor, value):
         query = "UPDATE inputbot_unfollowlog SET unfollowed = 1 WHERE following_name = ?"
-        print "changing unfollowed = True for %s"%value
         cursor.execute(query, value)
         connection.commit()
 
@@ -54,7 +54,6 @@ class UnfollowLogManager(object):
         cursor.execute(query, value)
         connection.commit()
 
-    #better logic
     def data_manipulation(self, connection, cursor, array):
         query = "SELECT id, following_name from inputbot_unfollowlog"
         cursor.execute(query)
@@ -69,9 +68,6 @@ class UnfollowLogManager(object):
               for i in range(len(array)):
                     if array[i] not in following_name:
                             value = (ids[-1]+1, array[i], 0, datetime.now().date(), "USER_Temp")
-                            print "Inserted Values are: "
-                            for x in value:
-                                print x
                             self.insert_data(connection, cursor, value)
                     
         elif len(following_name) > len(array): # if value in db but not in array, changing unfollow to true
@@ -83,10 +79,9 @@ class UnfollowLogManager(object):
         else:           # no value to change
                 for i in range(len(following_name)):
                     if following_name[i] in array:
-                        print "%s is available"%following_name[i]
+                        pass
                     else:
-                        print "%s is newly inserted"%array[i]
-                        value = (ids[-1]+1, array[i], 0, datetime.now().date(), "USER_Temp")
+                        value = (ids[-1]+1, array[i], 0, datetime.now().date(), self.insta_data_id)
                         self.insert_data(connection, cursor, value)
                         value = ("%s"%following_name[i],)
                         self.replace_data(connection, cursor, value)
@@ -95,14 +90,38 @@ class UnfollowLogManager(object):
         with open("usersFollower.json","r") as json_file:
             json_read_buffer = json.load(json_file)
         return json_read_buffer['users']
+    
+    def get_date_data(self, cursor, days):
+        query = "SELECT following_name, follow_time from inputbot_unfollowlog"
+        cursor.execute(query)
+        result = cursor.fetchall()
+        following_name = []
+        followed_time = []
+        for x in result:
+            following_name.append(x[0])
+            followed_time.append(x[1])
+        userlist = []
+        today = datetime.now()
+        for i in range(len(following_name)):
+            follow_time = datetime.strptime(followed_time[i],"%Y-%m-%d")
+            if abs((today - follow_time).days) > days:
+                userlist.append(following_name[i])
+        return userlist, len(userlist)
         
+# manual functions end by abburi 
+
     def correctUnfollowLog(self, userArray):
-        connection, cursor = self.db_connection('log-data-main.db')        
-        self.data_manipulation(connection, cursor, userArray)
-        
-    def getDataFromUnfollowLog(self, days=2, amountUserToUnfollow=0):
         try:
-            pass
+            connection, cursor = self.db_connection('log-data-main.db')        
+            self.data_manipulation(connection, cursor, userArray)
+        except Exception as e:
+            print(e)
+            
+    def getDataFromUnfollowLog(self, days=2, amountUserToUnfollow=0):
+        connection, cursor = self.db_connection('log-data-main.db')        
+        try:
+            userlist, amountUserToUnfollow = self.get_date_data(cursor, days)
+            data_all = [userlist, amountUserToUnfollow]
         except Exception as e:
             print(e)
         return data_all
@@ -111,4 +130,4 @@ if __name__ == "__main__":
     fl = UnfollowLogManager('niclasguenther')
     userArray = fl.get_json()
     fl.correctUnfollowLog(userArray)
-    #users_list = fl.getDataFromUnfollowLog(days=2, amountUserToUnfollow=20)
+    fl.getDataFromUnfollowLog(days=2, amountUserToUnfollow=20)
