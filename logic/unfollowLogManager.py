@@ -117,7 +117,7 @@ class UnfollowLogManager(object):
         except Exception as e:
             print(e)
             
-    def getDataFromUnfollowLog(self, days=2, amountUserToUnfollow=0):
+    def getDataFromUnfollowLog(self, days, amountUserToUnfollow):
         connection, cursor = self.db_connection('log-data-main.db')        
         try:
             userlist, amountUserToUnfollow = self.get_date_data(cursor, days)
