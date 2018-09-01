@@ -1,4 +1,4 @@
-import pandas as pd
+#import pandas as pd
 
 from contextlib import contextmanager
 
@@ -10,8 +10,9 @@ from datetime import datetime, timedelta
 #added by abburi
 import sqlite3
 import warnings
+import json
 
-warnings.filterwarnings("ignore") # to not display pandas incompatibility error which i was getting
+warnings.filterwarnings("ignore")
 
 USERNAME = 'postgres'
 PASSWORD = 'pass123'
@@ -80,12 +81,25 @@ class UnfollowLogManager(object):
                         self.replace_data(connection, cursor, value)
 
         else:           # no value to change
-                pass
-
+                for i in range(len(following_name)):
+                    if following_name[i] in array:
+                        print "%s is available"%following_name[i]
+                    else:
+                        print "%s is newly inserted"%array[i]
+                        value = (ids[-1]+1, array[i], 0, datetime.now().date(), "USER_Temp")
+                        self.insert_data(connection, cursor, value)
+                        value = ("%s"%following_name[i],)
+                        self.replace_data(connection, cursor, value)
+    
+    def get_json(self):
+        with open("usersFollower.json","r") as json_file:
+            json_read_buffer = json.load(json_file)
+        return json_read_buffer['users']
+        
     def correctUnfollowLog(self, userArray):
-        connection, cursor = self.db_connection('log-data.db')
+        connection, cursor = self.db_connection('log-data-main.db')        
         self.data_manipulation(connection, cursor, userArray)
-
+        
     def getDataFromUnfollowLog(self, days=2, amountUserToUnfollow=0):
         try:
             pass
@@ -95,5 +109,6 @@ class UnfollowLogManager(object):
 
 if __name__ == "__main__":
     fl = UnfollowLogManager('niclasguenther')
-    fl.correctUnfollowLog(['insta1', 'insta2', 'insta3'])
+    userArray = fl.get_json()
+    fl.correctUnfollowLog(userArray)
     #users_list = fl.getDataFromUnfollowLog(days=2, amountUserToUnfollow=20)
