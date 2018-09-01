@@ -9,6 +9,9 @@ from datetime import datetime, timedelta
 
 #added by abburi
 import sqlite3
+import warnings
+
+warnings.filterwarnings("ignore") # to not display pandas incompatibility error which i was getting
 
 USERNAME = 'postgres'
 PASSWORD = 'pass123'
@@ -35,22 +38,24 @@ class UnfollowLogManager(object):
 
 #added by abburi
     def db_connection(self, db_name):
-        connection = sqllite3.connect(db_name)
+        connection = sqlite3.connect(db_name)
         cursor = connection.cursor()
         return connection, cursor
 
     def replace_data(self, connection, cursor, value):
-        query = "UPDATE inputbot_unfollowlog SET unfollowed = 0 WHERE following_name = ?"
+        query = "UPDATE inputbot_unfollowlog SET unfollowed = 1 WHERE following_name = ?"
+        print "changing unfollowed = True for %s"%value
         cursor.execute(query, value)
         connection.commit()
 
     def insert_data(self, connection, cursor, value):
-        query = "INSERT INTO inputbot_unfollowlog (id, following_name, unfollowed, unfollowed_time, follow_time, insta_data_id) VALUES (?,?,?,0,?,?)"
+        query = "INSERT INTO inputbot_unfollowlog (id, following_name, unfollowed, follow_time, insta_data_id) VALUES (?,?,?,?,?)"
         cursor.execute(query, value)
         connection.commit()
 
-    def get_data(self, connection, cursor, array):
-        query = "SELECT id, unfollowed from inputbot_unfollowlog"
+    #better logic
+    def data_manipulation(self, connection, cursor, array):
+        query = "SELECT id, following_name from inputbot_unfollowlog"
         cursor.execute(query)
         result = cursor.fetchall()
         ids = []
@@ -58,17 +63,28 @@ class UnfollowLogManager(object):
         for x in result:
             ids.append(x[0])
             following_name.append(x[1])
-        for i in range(len(array)):
-            if array[i] == following_name[i]:
-                    self.replace_data(connection, cursor, following_name[i])
-            else:
-                value = (array[i], following_name[i], 1, 0, datetime.now().date(), "USER%s"%i)
-                self.insert_data(connection, cursor, value)
-#end by abburi
+
+        if len(array) > len(following_name): # if value not in db but in array, inserting new data
+              for i in range(len(array)):
+                    if array[i] not in following_name:
+                            value = (ids[-1]+1, array[i], 0, datetime.now().date(), "USER_Temp")
+                            print "Inserted Values are: "
+                            for x in value:
+                                print x
+                            self.insert_data(connection, cursor, value)
+                    
+        elif len(following_name) > len(array): # if value in db but not in array, changing unfollow to true
+                for i in range(len(following_name)):
+                    if following_name[i] not in array:
+                        value = ("%s"%following_name[i],)
+                        self.replace_data(connection, cursor, value)
+
+        else:           # no value to change
+                pass
+
     def correctUnfollowLog(self, userArray):
-        print "Starting this function"
-        connecction, cursor = db_connection('log-data.db')
-        get_data(connection, cursor, UserArray)
+        connection, cursor = self.db_connection('log-data.db')
+        self.data_manipulation(connection, cursor, userArray)
 
     def getDataFromUnfollowLog(self, days=2, amountUserToUnfollow=0):
         try:
@@ -79,5 +95,5 @@ class UnfollowLogManager(object):
 
 if __name__ == "__main__":
     fl = UnfollowLogManager('niclasguenther')
-    fl.correctUnfollowLog(['insta1', 'insta2', 'insta4'])
-    users_list = fl.getDataFromUnfollowLog(days=2, amountUserToUnfollow=20)
+    fl.correctUnfollowLog(['insta1', 'insta2', 'insta3'])
+    #users_list = fl.getDataFromUnfollowLog(days=2, amountUserToUnfollow=20)
