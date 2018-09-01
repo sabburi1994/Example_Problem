@@ -92,20 +92,27 @@ class UnfollowLogManager(object):
         return json_read_buffer['users']
     
     def get_date_data(self, cursor, days):
-        query = "SELECT following_name, follow_time from inputbot_unfollowlog"
+        query = "SELECT following_name, follow_time, unfollowed from inputbot_unfollowlog"
         cursor.execute(query)
         result = cursor.fetchall()
         following_name = []
         followed_time = []
+        unfollowed = []
         for x in result:
             following_name.append(x[0])
             followed_time.append(x[1])
+            unfollowed.append(x[2])
         userlist = []
         today = datetime.now()
         for i in range(len(following_name)):
             follow_time = datetime.strptime(followed_time[i],"%Y-%m-%d")
-            if abs((today - follow_time).days) > days:
+            if abs((today - follow_time).days) > days and unfollowed[i] == 0:
                 userlist.append(following_name[i])
+            else:
+                pass
+        dict_list = {'following_name':userlist}
+        with open("unfollowuserlist.json","w") as json_file:
+            json.dump(dict_list, json_file)
         return userlist, len(userlist)
         
 # manual functions end by abburi 
