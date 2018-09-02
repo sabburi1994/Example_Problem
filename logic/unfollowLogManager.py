@@ -138,7 +138,9 @@ class UnfollowLogManager(object):
         return data_all
 
 if __name__ == "__main__":
-    fl = UnfollowLogManager('niclasguenther')
-    userArray = fl.get_json()
-    fl.correctUnfollowLog(userArray)
-    fl.getDataFromUnfollowLog(days=2, amountUserToUnfollow=20)
+    users = ["niclasguenther_1","niclasguenther_2"]
+    for i in range(len(users)):
+        fl = UnfollowLogManager(users[i])
+        userArray = fl.get_json()
+        fl.correctUnfollowLog(userArray)
+        fl.getDataFromUnfollowLog(days=2, amountUserToUnfollow=20)
