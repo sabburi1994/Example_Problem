@@ -45,7 +45,7 @@ class UnfollowLogManager(object):
         return connection, cursor
 
     def replace_data(self, connection, cursor, value):
-        query = "UPDATE inputbot_unfollowlog SET unfollowed = 1 WHERE following_name = ?"
+        query = "UPDATE inputbot_unfollowlog SET unfollowed = ? WHERE following_name = ?"
         cursor.execute(query, value)
         connection.commit()
 
@@ -73,8 +73,12 @@ class UnfollowLogManager(object):
         elif len(following_name) > len(array): # if value in db but not in array, changing unfollow to true
                 for i in range(len(following_name)):
                     if following_name[i] not in array:
-                        value = ("%s"%following_name[i],)
-                        self.replace_data(connection, cursor, value)
+                        value = ("%s"%following_name[i],1)
+                        self.replace_data(connection, cursor, value, )
+                    else:
+                        value = ("%s"%following_name[i],0)
+                        self.replace_data(connection, cursor, value, )
+                        
 
         else:           # no value to change
                 for i in range(len(following_name)):
