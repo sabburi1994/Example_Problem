@@ -49,6 +49,11 @@ class UnfollowLogManager(object):
         cursor.execute(query, value)
         connection.commit()
 
+    def update_follow_time(self, connection, cursor, value):
+        query = "UPDATE inputbot_unfollowlog SET followed_time = ? WHERE following_name = ?"
+        cursor.execute(query, value)
+        connection.commit()
+        
     def insert_data(self, connection, cursor, value):
         query = "INSERT INTO inputbot_unfollowlog (id, following_name, unfollowed, follow_time, insta_data_id) VALUES (?,?,?,?,?)"
         cursor.execute(query, value)
@@ -67,7 +72,7 @@ class UnfollowLogManager(object):
         if len(array) > len(following_name): # if value not in db but in array, inserting new data
               for i in range(len(array)):
                     if array[i] not in following_name:
-                            value = (ids[-1]+1, array[i], 0, datetime.now().date(), "USER_Temp")
+                            value = (ids[-1]+1, array[i], 0, datetime.now().date(), self.insta_data_id)
                             self.insert_data(connection, cursor, value)
                     
         elif len(following_name) > len(array): # if value in db but not in array, changing unfollow to true
@@ -79,7 +84,6 @@ class UnfollowLogManager(object):
                         value = ("%s"%following_name[i],0)
                         self.replace_data(connection, cursor, value, )
                         
-
         else:           # no value to change
                 for i in range(len(following_name)):
                     if following_name[i] in array:
@@ -89,7 +93,7 @@ class UnfollowLogManager(object):
                         self.insert_data(connection, cursor, value)
                         value = ("%s"%following_name[i],)
                         self.replace_data(connection, cursor, value)
-    
+                        
     def get_json(self):
         with open("usersFollower.json","r") as json_file:
             json_read_buffer = json.load(json_file)
