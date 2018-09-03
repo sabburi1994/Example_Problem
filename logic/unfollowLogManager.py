@@ -84,7 +84,7 @@ class UnfollowLogManager(object):
                         value = ("%s"%following_name[i],0)
                         self.replace_data(connection, cursor, value, )
                         
-        else:           # no value to change
+        else:           # array lenght is same, but the elements may not be same
                 for i in range(len(following_name)):
                     if following_name[i] in array:
                         pass
